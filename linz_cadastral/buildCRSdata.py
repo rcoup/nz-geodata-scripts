@@ -75,18 +75,18 @@ def main():
 
     #get source file names
     files = [os.path.join(dirname, f) for f in [
-        'roadadd/rns.crs.Z', 
-        'roadadd/rcl1.crs.Z', 
-        'roadadd/rna.crs.Z', 
-        'parcel/sap.crs.Z', 
-        'parcel/sta.crs.Z', 
-        'parcel/app1.crs.Z', 
-        'title/ttl.crs.Z', 
-        'title/nmi.crs.Z', 
-        'parcel/lgd1.crs.Z', 
-        'parcel/lgp.crs.Z', 
-        'roadadd/sad1.crs.Z', 
-        'parcel/par1.crs.Z', 
+        'roadadd/rns.crs.Z',
+        'roadadd/rcl1.crs.Z',
+        'roadadd/rna.crs.Z',
+        'parcel/sap.crs.Z',
+        'parcel/sta.crs.Z',
+        'parcel/app1.crs.Z',
+        'title/ttl.crs.Z',
+        'title/nmi.crs.Z',
+        'parcel/lgd1.crs.Z',
+        'parcel/lgp.crs.Z',
+        'roadadd/sad1.crs.Z',
+        'parcel/par1.crs.Z',
         'parcel/par9.crs.Z'
     ]]
     
@@ -137,9 +137,8 @@ def main():
             dbcur.execute(sql)
             print "...succeeded"
         except:
-            print "...failed"
             #indexes may already exist
-            pass 
+            print "...failed"
 
     print "Finished! :)"
 

@@ -24,13 +24,13 @@ Usage: %s arcshape_root year dbname
         os.system("""psql -d %s -c "update %s set the_geom = transform(the_geom, 2193);" """ % (dbname,name,))
         os.system("""psql -d %s -c "ALTER TABLE %s ADD CONSTRAINT enforce_srid_the_geom CHECK (srid(the_geom) = 2193);" """ % (name,))
 
-    indexes = [     
+    indexes = [
         "create index idx_mb%(y)s_au%(y)s on mb%(y)s (au%(y)s)" % {'y' : year},
         "create index idx_mb%(y)s_ua%(y)s on mb%(y)s (ua%(y)s)" % {'y' : year},
         "create index idx_mb%(y)s_ta%(y)s on mb%(y)s (ta%(y)s)" % {'y' : year},
         "create index idx_mb%(y)s_regc%(y)s on mb%(y)s (regc%(y)s)" % {'y' : year},
         "create index idx_mb%(y)s_the_geom on mb%(y)s using gist (the_geom gist_geometry_ops)" % {'y' : year},
-        ]
+    ]
     for index in indexes:
         os.system("""psql -d cdes -c "%s" """ % (index,))
     

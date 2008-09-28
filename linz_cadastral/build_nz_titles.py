@@ -96,7 +96,7 @@ def main():
     dbcur.execute("create index idx_nz_titles_geom on nz_titles using gist(geom gist_geometry_ops)")
 
     print "Committing changes..."
-    dbcon.commit()    
+    dbcon.commit()
 
     print "Finished!"
 

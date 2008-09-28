@@ -66,34 +66,34 @@ def main():
 
     dbcur.execute("""
     INSERT INTO nz_roads (id, name, type, sufi, unofficial, geom, othername1, othername2) (
-        SELECT 
-            c.id, coalesce(asp.name, n.name), n.type, n.location AS sufi, 
-            (n.unofficial_flag = 'Y')::boolean AS unofficial, 
+        SELECT
+            c.id, coalesce(asp.name, n.name), n.type, n.location AS sufi,
+            (n.unofficial_flag = 'Y')::boolean AS unofficial,
             multi(
                 linemerge(
                     collect(
-                        collect(c.shape, o2.shape), 
+                        collect(c.shape, o2.shape),
                         o3.shape
                     )
                 )
-            ) as geom, 
+            ) as geom,
             o2.name AS othername1, o3.name AS othername2
-        FROM 
-        crs_road_name n JOIN crs_road_name_asc a ON a.rna_id = n.id 
+        FROM
+        crs_road_name n JOIN crs_road_name_asc a ON a.rna_id = n.id
         JOIN crs_road_ctr_line c ON c.id = a.rcl_id
-    LEFT JOIN asp_street AS asp ON asp.sufi = n.location 
+    LEFT JOIN asp_street AS asp ON asp.sufi = n.location
         LEFT JOIN (
-            SELECT coalesce(n2.name, asp2.name) as name, c2.shape, c2.id 
+            SELECT coalesce(n2.name, asp2.name) as name, c2.shape, c2.id
             FROM crs_road_name n2, crs_road_ctr_line c2, crs_road_name_asc a2, asp_street asp2
             WHERE a2.rcl_id = c2.id AND a2.priority = 2 AND n2.id = a2.rna_id AND n2.location = asp2.sufi
         ) AS o2 ON o2.id = c.id
         LEFT JOIN (
-            SELECT coalesce(n3.name, asp3.name) as name, c3.shape, c3.id 
+            SELECT coalesce(n3.name, asp3.name) as name, c3.shape, c3.id
             FROM crs_road_name n3, crs_road_ctr_line c3, crs_road_name_asc a3, asp_street asp3
             WHERE a3.rcl_id = c3.id AND a3.priority = 3 AND n3.id = a3.rna_id AND n3.location = asp3.sufi
-        ) AS o3 ON o3.id = c.id 
+        ) AS o3 ON o3.id = c.id
 
-        WHERE a.priority = 1
+        WHERE a.priority = 1 AND a.type <> 'RLWY'
     )
         """)
         

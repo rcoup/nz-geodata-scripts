@@ -85,7 +85,7 @@ def main():
                 asp_street.name,
                 crs_title.title_no,
 
-                array_to_string(array(( 
+                array_to_string(array((
                     select distinct
                     coalesce(
                         case    when nmi.name_type = 'PERS' then trim(nmi.other_names || ' ' || nmi.surname)
@@ -95,7 +95,7 @@ def main():
                     from crs_nominal_index nmi
                     where nmi.ttl_title_no = crs_title.title_no
                     )), '; '),
-                crs_street_address.shape, 
+                crs_street_address.shape,
                 mb%(y)s.mb%(y)s::integer,
                 au%(y)s.au_name,
                 ua%(y)s.ua_name,

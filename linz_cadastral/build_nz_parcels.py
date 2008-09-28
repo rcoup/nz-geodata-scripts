@@ -100,7 +100,7 @@ def main():
         select parcels.parcel_id as par_id,
             parcels.street_add as street_add,
             crs_title.title_no as title_no,
-            array_to_string(array(( 
+            array_to_string(array((
                 select distinct
                 coalesce(
                     case    when nmi.name_type = 'PERS' then trim(nmi.other_names || ' ' || nmi.surname)
@@ -113,7 +113,7 @@ def main():
             au%(y)s.au_name as au_name,
             ua%(y)s.ua_name as ua_name,
             parcels.shape as geom
-        from 
+        from
             (
                 select crs_parcel.id as parcel_id, trim(array_to_string(array(
                 (
@@ -122,7 +122,7 @@ def main():
                     WHERE sa.parcel_id = crs_parcel.id
                     ORDER BY sa.house_number ASC
                 )), ',') || ' ' || coalesce(asp_street.name, '')) as street_add, crs_street_address.meshblock_gid as meshblock_gid, crs_parcel.shape as shape
-                FROM crs_parcel LEFT JOIN crs_street_address ON crs_parcel.id = crs_street_address.parcel_id 
+                FROM crs_parcel LEFT JOIN crs_street_address ON crs_parcel.id = crs_street_address.parcel_id
                     LEFT JOIN crs_road_name ON crs_street_address.rna_id = crs_road_name.id
                     LEFT JOIN asp_street ON asp_street.sufi = crs_road_name.location
                 GROUP BY crs_parcel.id, crs_parcel.shape, crs_street_address.rna_id, asp_street.name, meshblock_gid
@@ -175,15 +175,15 @@ def main():
     print "Fetching appellation data."
     cursor2 = dbcon.cursor("cursor2")
     cursor2.execute("""
-        SELECT a.par_id, 
-            trim(a.appellation_value) as appellation_value, 
-            trim(a.sub_type) as sub_type, 
-            trim(a.part_indicator) as part_indicator, 
-            trim(a.parcel_type) as parcel_type, 
-            trim(a.parcel_value) as parcel_value, 
-            trim(a.block_number) as block_number, 
-            trim(a.sub_type_position) as sub_type_position, 
-            trim(a.maori_name) as maori_name, 
+        SELECT a.par_id,
+            trim(a.appellation_value) as appellation_value,
+            trim(a.sub_type) as sub_type,
+            trim(a.part_indicator) as part_indicator,
+            trim(a.parcel_type) as parcel_type,
+            trim(a.parcel_value) as parcel_value,
+            trim(a.block_number) as block_number,
+            trim(a.sub_type_position) as sub_type_position,
+            trim(a.maori_name) as maori_name,
             trim(a.type) as type
         FROM crs_appellation AS a
         %(debug)s

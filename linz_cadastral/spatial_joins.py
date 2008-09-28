@@ -12,7 +12,7 @@ Precomputes spatial joins for CRS data. Takes a LONG time! You have been warned 
 Usage:
     %s -y <year> --database-dsn <database dsn>
     
-    -y: The two digit ArcShape data year (e.g. 07) 
+    -y: The two digit ArcShape data year (e.g. 07)
 
     --database-dsn: Database DSN - eg. "host=db.example.com dbname=exampledb user=frog password=stomp"
 
@@ -68,9 +68,8 @@ def main():
             dbcur.execute(sql)
             print "succeeded (rowcount=%d) (%d of %d)" % (dbcur.rowcount, i, len(sqls))
         except:
-            print "FAILED:", sql, "(%d of %d)" % (i, len(sqls))
             #indexes may already exist
-            pass 
+            print "FAILED:", sql, "(%d of %d)" % (i, len(sqls))
 
     print "Finished!"
 

@@ -114,7 +114,7 @@ def import_stuff(crsfile, dbcur):
                 if len(fields[f]) < 1: continue
                 nextField = fields[f]
                 while len(nextField) >= 1 and nextField[-1] == u'\\':
-                    if len(fields[f]) >= 2 and fields[f][-2] == u'\\': 
+                    if len(fields[f]) >= 2 and fields[f][-2] == u'\\':
                         break #poor man's escaping!
                     fields[f] += fields[f+1]
                     nextField = fields.pop(f+1)
@@ -126,9 +126,6 @@ def import_stuff(crsfile, dbcur):
             for ii in range(len(cols)):
                 if cols[ii][0] == u'status' and fields[ii] in (u'HIST', u'HSTO'):
                     #historic data, ignore
-                    ignoreRow = True
-                if cols[ii][0] == u'type' and fields[ii] == u'RLWY':
-                    # why ignore RLWY type?
                     ignoreRow = True
                 if cols[ii][1] in (u'geometry', u'st_geometry'):
                     if len(fields[ii][2:]) > 0:
