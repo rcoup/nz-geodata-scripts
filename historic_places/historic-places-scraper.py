@@ -143,13 +143,13 @@ def get_info(id, verbose=False):
     # FIXME: Checking for a title is the best way to test an entry?
     tn = soup.find('td', {'class':"ListingHeader"})
     if tn:
-        page_info[u'title'] = tn.string
+        page_info[u'title'] = strip_ws(tn.renderContents())
     else:
         raise Exception("No title! (probably 404, but the website sucks)")
     
     tn = soup.find('td', {'class':"ListingSubHeader"})
     if tn:
-        page_info[u'subtitle'] = tn.string
+        page_info[u'subtitle'] = strip_ws(tn.renderContents())
     else:
         print >>sys.stderr, "Subtitle not found"
     
@@ -168,7 +168,7 @@ def get_info(id, verbose=False):
             m = RE_GPS.match(f_val)
             if m:
                 page_info['gps_x'] = int(m.group(1))
-                page_info['gsp_y'] = int(m.group(2))
+                page_info['gps_y'] = int(m.group(2))
         else:
             page_info[f_key] = f_val
     
