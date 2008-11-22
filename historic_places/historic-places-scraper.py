@@ -88,13 +88,13 @@ RE_STRIP_WS = (
 
 def strip_ws(s):
     try:
-        s = s.strip()
+        s = s.decode('utf-8').strip()
         for f,r in RE_STRIP_WS:
             s = f.sub(r, s)
         s = s.strip()
         return s
     except Exception, e:
-        print >>sys.stderr, u"Got error processing (%s): %s" % (e,s)
+        print >>sys.stderr, u"Got error processing (%s)" % e
         raise
 
 def find_max_index():
@@ -162,10 +162,10 @@ def get_info(id, verbose=False):
             print >>sys.stderr, 'Field not found in map: "%s"' % f_str
             continue
         
-        if f_key == u'gps_ref':
+        if f_key in ('gps_ref', 'nzaa_site_no'):
             # parse the GPS references into X & Y values
-            # TODO: are this in NZTM? NZMG?
-            m = RE_GPS.match(f_val)
+            # these are in NZMG (EPSG:27200)
+            m = RE_GPS.search(f_val)
             if m:
                 page_info['gps_x'] = int(m.group(1))
                 page_info['gps_y'] = int(m.group(2))
@@ -178,7 +178,7 @@ def do_item(id, verbose):
     # grab the info for an entry and JSONify it to stdout
     try:
         info = get_info(id, verbose)
-        print simplejson.dumps(info, indent=(verbose and 2 or None)) + ","
+        print simplejson.dumps(info, indent=(verbose and 2 or None)) + u","
     except Exception, e:
         print >>sys.stderr, "Got an error with entry %d: %s" % (id, str(e))
 
