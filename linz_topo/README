@@ -1,0 +1,46 @@
+= LINZ NZTopo Processing Scripts =
+
+Part of the NZ GeoData Scripts project:
+  http://code.google.com/p/nz-geodata-scripts/
+
+This file describes how to generate the a number of Shapefiles 
+from the raw LSLIFF data (*.iff files) as provided to purchasers of
+the LINZ NZTopo extracts. 
+
+Each layer in the LSLIFF theme (a .iff file) ends up as a Shapefile.
+
+Requirements:
+ - Python >= 2.4
+ - GDAL/OGR, built with the Python bindings
+
+For support, head to the NZ Open GIS group at:
+  http://groups.google.co.nz/group/nzopengis
+
+More information:
+ - LINZ NZTopo data:
+   http://www.linz.govt.nz/topography/topographic-data/index.aspx
+ 
+ - LINZ details on LSLIFF file format:
+   http://www.linz.govt.nz/topography/topographic-data/technical/index.aspx#lsliff
+ 
+== Running the converter ==
+
+To display help and usage information:
+
+  python iff2shp.py --help
+
+To convert:
+
+  python iff2shp.py /path/to/my.iff
+
+For each .iff file, a folder under the current working directory will be 
+created, which contains the output Shapefiles.
+
+Notes:
+ * for Chatham Islands data, you will need to setup the projection details (as 
+   WKT) in your GDAL data dir (eg. /usr/share/gdal/esri_extra.wkt) and specify 
+   -S on the command line. (Unless EPSG actually adds Chatham Islands TM with an
+   official number).
+ * If you're getting weird file errors, you may have run into the maximum open
+   files limit for your system. This is quite possible under OSX, less so Linux.
+   You can increase the limit using ulimit (eg. 'ulimit -n 1024').

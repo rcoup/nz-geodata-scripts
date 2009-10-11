@@ -1,0 +1,10 @@
+NOTICE
+
+LINZ NZTopo Processing Scripts
+Copyright 2008,2009 Koordinates Limited
+http://code.google.com/p/nz-geodata-scripts/
+
+The following CSV files are extracted from the Topographic Data Dictionary, 
+and are Copyright Land Information New Zealand:
+ - ACcodes.csv
+ - FScodes.csv
