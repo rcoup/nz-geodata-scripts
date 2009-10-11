@@ -3,11 +3,9 @@
 Part of the NZ GeoData Scripts project:
   http://code.google.com/p/nz-geodata-scripts/
 
-This file describes how to generate the a number of Shapefiles 
-from the raw LSLIFF data (*.iff files) as provided to purchasers of
-the LINZ NZTopo extracts. 
-
-Each layer in the LSLIFF theme (a .iff file) ends up as a Shapefile.
+This script generates Shapefiles from the raw LSLIFF data (*.iff files) as 
+provided to purchasers of the LINZ NZTopo extracts. Each layer in the LSLIFF 
+theme (a .iff file) ends up as a Shapefile.
 
 Requirements:
  - Python >= 2.4
