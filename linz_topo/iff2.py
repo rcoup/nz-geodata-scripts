@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-
-# Copyright 2008,2009 Koordinates Limited
+#
+# Copyright 2008-2010 Koordinates Limited
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,22 +23,22 @@ from decimal import Inf
 from optparse import OptionParser
 import shutil
 
+# Layers to process when we're in debug mode
+DEBUG_MAXLINES = 20000000   # don't process more input lines than this
+
 USAGE="""
 Convert the LINZ Topo data from the LAMPS2 .iff files as distributed by LINZ 
 into Shapefiles.
 
 Usage:
-    %prog [options] IFF...
+    %prog [options] (--shapefile DEST)|(--postgis DBSTR) IFF...
     
 Each IFF can be a path to either the raw .iff or the compressed .iff.Z file.
 File extensions are not case-sensitive.
 
-Directories are created for each layer under the current working directory. 
-Any existing layers are deleted.
+Use either --shapefile and specify an output directory DEST, or --postgis
+and specify an OGR DB connection string.
 """
-
-# Layers to process when we're in debug mode
-DEBUG_MAXLINES = 20000000   # don't process more input lines than this
 
 def main():
     parser = OptionParser(usage=USAGE)
@@ -48,23 +48,46 @@ def main():
                       help="Debug mode: test only specified layers, and don't process every line. [default: %default]")
     parser.add_option("--debug-layers", dest="debug_layers", action="append", default=[320],
                       help="When in debug mode, the layers to process. [default: mine_poly]")
+    parser.add_option("-p", "--postgis", dest="postgis", default=None,
+                      help="Output to PostGIS DB. Specify connection string as \"dbname='dbname' host='host' user='x' password='x' port='5432'\"")
+    parser.add_option("-s", "--shapefile", dest="shapefile", default=None,
+                      help="Output ESRI Shapefile to specified directory, which will be cleared.")
     (opts, iffs) = parser.parse_args()
     
     if not len(iffs):
         parser.error("You must specify at least one .iff file")
     
-    processor = IFFProcessor(opts)
+    if (opts.postgis and opts.shapefile) or not (opts.postgis or opts.shapefile):
+        parser.error("Specify one of SHP or PostGIS output")
+    
+    if opts.shapefile:
+        if os.path.exists(opts.shapefile):
+            shutil.rmtree(opts.shapefile)
+        opts.shapefile = os.path.abspath(opts.shapefile)
+        os.makedirs(opts.shapefile)
+        
+        ds_drv = "ESRI Shapefile"
+        ds_str = opts.shapefile
+        lc_opts = []
+    else:
+        ds_drv = "PostgreSQL"
+        ds_str = 'PG:%s' % opts.postgis
+        lc_opts = ['DIM=2', 'LAUNDER=NO', 'OVERWRITE=YES']
+    
+    processor = IFFProcessor(debug=opts.debug, srid=opts.srid)
     for iff in iffs:
         if not os.path.exists(iff):
             parser.error("File does not exist: %s" % iff)
         print "IFF file:", iff
-        processor.run(iff)
+        processor.run(iff, ds_drv, ds_str, lc_opts)
     
     print "Finished!"
 
 class IFFProcessor(object):
-    def __init__(self, options):
-        self.opts = options
+    def __init__(self, srid=2193, debug=False, debug_layers=None):
+        self.srid = srid
+        self.debug = debug
+        self.debug_layers = debug_layers
         
         scriptfolder = os.path.split(__file__)[0]
         self.attributes = {}
@@ -78,8 +101,8 @@ class IFFProcessor(object):
             self.tables[code] = desc
         
         self.srs = osr.SpatialReference()
-        self.srs.ImportFromEPSG(self.opts.srid)
-        assert self.srs, "Could not create spatial reference from SRID %d" % self.opts.srid
+        self.srs.ImportFromEPSG(self.srid)
+        assert self.srs, "Could not create spatial reference from SRID %d" % self.srid
     
     GEOMETRY_TYPES = {
         'bdy': ogr.wkbLineString,
@@ -103,21 +126,14 @@ class IFFProcessor(object):
         ogr.wkbPolygon: 'POLYGON(%s%s)',
     }
     
-    def run(self, iff):
-        outfolder = os.path.splitext(os.path.split(iff)[1])[0]
-        if outfolder[-4:].lower() == '.iff':
-            outfolder = outfolder[:-4]
-        outfolder = os.path.abspath(outfolder)
-        
+    def run(self, iff, driver_name, ds_desc, layer_opts):
         fileObj = self.get_file(iff)
         
-        print "Creating output folder %s" % outfolder
-        if not os.path.exists(outfolder):
-            os.makedirs(outfolder)
+        ogr_driver = ogr.GetDriverByName(driver_name)
         
-        ogr_driver = ogr.GetDriverByName("ESRI Shapefile")
+        dataset = ogr_driver.CreateDataSource(ds_desc)
+        assert dataset is not None, "Error creating datasource: %s: %s" % (driver_name, ds_desc)
         
-        datasets = {}
         layers = {}
         layer_fields = {}
         attribute_data_types = {}
@@ -129,7 +145,6 @@ class IFFProcessor(object):
         feature_code_int = None
         feature_code_text = None
         points = []
-        ds = None
         fids = {}
         geometry_field_name = 'the_geom' 
         first_geometry = True
@@ -146,7 +161,7 @@ class IFFProcessor(object):
                 print linecount
             code = line[:2]
             
-            if self.opts.debug and linecount >= DEBUG_MAXLINES:
+            if self.debug and linecount >= DEBUG_MAXLINES:
                 print "DEBUG is on, stopping 1st pass at %d lines." % DEBUG_MAXLINES
                 break
             
@@ -158,31 +173,22 @@ class IFFProcessor(object):
                 # new feature
                 feature_code_int = line[3:].strip().split(" ", 1)[0]
                 
-                if self.opts.debug:
-                    skip_feature = feature_code_int not in self.opts.debug_layers
+                if self.debug:
+                    skip_feature = feature_code_int not in self.debug_layers
                     if skip_feature:
                         continue
                 
                 table_name = self.tables[feature_code_int]
                 geometry_type = self.get_geometry_type(table_name)
                 
-                if table_name not in datasets:
-                    shp_path = os.path.join(outfolder, table_name)
-                    
-                    if os.path.exists(shp_path):
-                        print "Removing existing layer: %s" % table_name
-                        shutil.rmtree(shp_path)
-                    
+                if table_name not in layers:
                     print "Creating layer: %s" % table_name
-                    datasets[table_name] = ogr_driver.CreateDataSource(shp_path)
-                    assert datasets[table_name] is not None, "Error creating datasource: %s" % shp_path
-                    layers[table_name] = datasets[table_name].CreateLayer(table_name, self.srs, geometry_type)
+                    layers[table_name] = dataset.CreateLayer(table_name, self.srs, geometry_type, options=layer_opts)
                     assert layers[table_name] is not None, "Error creating layer: %s" % table_name
                     
                     layer_fields[table_name] = []
                     fids[table_name] = 1
                 
-                ds = datasets[table_name]
                 layer = layers[table_name]
             
             elif code == 'AC':
@@ -242,15 +248,14 @@ class IFFProcessor(object):
             elif code == 'FS':
                 feature_code_int = line[3:].strip().split(" ", 1)[0]
 
-                if self.opts.debug:
-                    skip_feature = feature_code_int not in self.opts.debug_layers
+                if self.debug:
+                    skip_feature = feature_code_int not in self.debug_layers
                     if skip_feature:
                         continue
 
                 table_name = self.tables[feature_code_int]
                 geometry_type = self.get_geometry_type(table_name)
 
-                ds = datasets[table_name]
                 layer = layers[table_name]
 
             elif code == 'AC':
@@ -294,14 +299,12 @@ class IFFProcessor(object):
 
         fileObj.close()
 
-        for d,dataset in datasets.items():
-            for i in range(dataset.GetLayerCount()):
-                ogr_layer = dataset.GetLayer(i)
-                dataset.ExecuteSQL("CREATE SPATIAL INDEX ON %s" % ogr_layer.GetName())
-                ogr_layer.SyncToDisk()
-            dataset.Destroy()
-        
-        
+        for i in range(dataset.GetLayerCount()):
+            ogr_layer = dataset.GetLayer(i)
+            dataset.ExecuteSQL("CREATE SPATIAL INDEX ON %s" % ogr_layer.GetName())
+            ogr_layer.SyncToDisk()
+        dataset.Destroy()
+    
     def get_file(self, path):
         if os.path.splitext(path)[1].lower() == '.z':
             print "Decompressing", path
@@ -324,6 +327,11 @@ class IFFProcessor(object):
         try:
             return self.attributes[int_type]
         except KeyError, e:
+            if not hasattr(self, '_unknown_attrs'):
+                self._unknown_attrs = set()
+            if int_type not in self._unknown_attrs:
+                self._unknown_attrs.add(int_type)
+                print >>sys.stderr, "WARNING: Unknown attribute %s" % int_type
             return "a%d" % int(int_type)
     
     def build_geometry(self, geometry_type, sections):
